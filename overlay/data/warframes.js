@@ -52,6 +52,7 @@ window.WARFRAMES = [
   "Rhino",
   "Saryn",
   "Sevagoth",
+  "Sirius&Orion",
   "Styanax",
   "Temple",
   "Titania",
