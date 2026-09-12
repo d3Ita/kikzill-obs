@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <title>Kikzill Roulette — Warframe &amp; Arme</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+  <!-- Scene de dessin a taille fixe : app.js la met a l'echelle de la source OBS,
+       l'overlay reste net et proportionne quelle que soit la taille choisie. -->
+  <div id="stage">
+    <div class="panel" id="panel">
+
+      <header class="panel-head">
+        <h1>Roulette Équipement</h1>
+        <span class="brand">kikzill</span>
+      </header>
+
+      <section class="reel-block">
+        <span class="badge badge-frame">Warframe</span>
+        <div class="rail" id="rail-warframe">
+          <div class="marker"></div>
+          <div class="train" id="train-warframe"></div>
+        </div>
+      </section>
+
+      <section class="reel-block">
+        <span class="badge badge-weapon">Arme</span>
+        <div class="rail" id="rail-weapon">
+          <div class="marker"></div>
+          <div class="train" id="train-weapon"></div>
+        </div>
+      </section>
+
+      <div class="result" id="result">
+        <h2>Configuration déterminée</h2>
+        <div class="cards">
+          <figure class="card" id="card-warframe">
+            <div class="card-art"><img id="img-warframe" src="" alt="" draggable="false"></div>
+            <figcaption class="card-kind">Warframe</figcaption>
+            <div class="card-name" id="name-warframe">…</div>
+          </figure>
+
+          <div class="plus" aria-hidden="true">+</div>
+
+          <figure class="card" id="card-weapon">
+            <div class="card-art"><img id="img-weapon" src="" alt="" draggable="false"></div>
+            <figcaption class="card-kind">Arme</figcaption>
+            <div class="card-name" id="name-weapon">…</div>
+          </figure>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- Cadre affiche uniquement en mode positionnement (?place=1) -->
+    <div class="place-frame" id="place-frame" hidden>
+      <span>Overlay Kikzill — déplace et redimensionne cette source, puis quitte le mode positionnement</span>
+    </div>
+  </div>
+
+  <script src="data/warframes.js"></script>
+  <script src="data/weapons.js"></script>
+  <script src="vendor/tmi.min.js"></script>
+  <!-- Genere par le script OBS. Absent = valeurs par defaut, l'overlay tourne a vide. -->
+  <script src="config.local.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>

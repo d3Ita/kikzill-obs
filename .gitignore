@@ -1,0 +1,10 @@
+# Genere par le script OBS et contient le token du bot : ne doit JAMAIS etre commite.
+overlay/config.local.js
+
+# Resultat temporaire de l'updater
+kikzill_update_result.txt
+
+# OS
+.DS_Store
+Thumbs.db
+desktop.ini

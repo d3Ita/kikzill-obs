@@ -1,0 +1,311 @@
+/* ============================================================
+   Kikzill Roulette — habillage de l'overlay
+   La scene #stage a une taille fixe (voir STAGE dans app.js) et
+   app.js la met a l'echelle : tout est donc en pixels de design.
+   ============================================================ */
+
+:root {
+  --bg-panel:      rgba(13, 12, 19, 0.86);
+  --bg-rail:       rgba(0, 0, 0, 0.38);
+  --line:          rgba(255, 255, 255, 0.09);
+  --line-strong:   rgba(255, 255, 255, 0.18);
+  --text:          #f2f0f7;
+  --text-dim:      rgba(242, 240, 247, 0.55);
+  --frame:         #35e0d0;   /* accent Warframe */
+  --weapon:        #ffb037;   /* accent Arme    */
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+html, body {
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  background: transparent;           /* indispensable pour OBS */
+  font-family: 'Outfit', 'Segoe UI', system-ui, sans-serif;
+  color: var(--text);
+  user-select: none;
+  cursor: default;
+}
+
+/* --- Scene mise a l'echelle -------------------------------- */
+
+#stage {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform-origin: center center;   /* le scale est pose par app.js */
+}
+
+/* --- Panneau principal ------------------------------------- */
+
+.panel {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  padding: 22px 28px 26px;
+  border-radius: 26px;
+  border: 1px solid var(--line);
+  background: var(--bg-panel);
+  backdrop-filter: blur(14px);
+  box-shadow: 0 28px 70px rgba(0, 0, 0, 0.55),
+              inset 0 1px 0 rgba(255, 255, 255, 0.06);
+  opacity: 0;
+  transform: translateY(18px) scale(0.97);
+  transition: opacity .45s ease, transform .45s cubic-bezier(.2, .9, .25, 1);
+  pointer-events: none;
+}
+
+.panel.show {
+  opacity: 1;
+  transform: translateY(0) scale(1);
+}
+
+.panel-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+}
+
+.panel-head h1 {
+  font-size: 26px;
+  font-weight: 800;
+  letter-spacing: .16em;
+  text-transform: uppercase;
+  background: linear-gradient(92deg, var(--frame), #ffffff 55%, var(--weapon));
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+.brand {
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: .3em;
+  text-transform: uppercase;
+  color: var(--text-dim);
+}
+
+/* --- Un rail de defilement ---------------------------------- */
+
+.reel-block { position: relative; }
+
+.badge {
+  position: absolute;
+  top: -9px;
+  left: 16px;
+  z-index: 3;
+  padding: 3px 12px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: .18em;
+  text-transform: uppercase;
+  color: #0d0c13;
+}
+
+.badge-frame  { background: var(--frame);  box-shadow: 0 0 18px rgba(53, 224, 208, .45); }
+.badge-weapon { background: var(--weapon); box-shadow: 0 0 18px rgba(255, 176, 55, .45); }
+
+.rail {
+  position: relative;
+  height: 150px;
+  overflow: hidden;
+  border-radius: 16px;
+  border: 1px solid var(--line);
+  background: var(--bg-rail);
+  /* Les vignettes s'estompent sur les bords au lieu d'etre coupees net. */
+  -webkit-mask-image: linear-gradient(90deg, transparent, #000 12%, #000 88%, transparent);
+          mask-image: linear-gradient(90deg, transparent, #000 12%, #000 88%, transparent);
+}
+
+.marker {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 50%;
+  z-index: 2;
+  width: 2px;
+  margin-left: -1px;
+  background: linear-gradient(180deg, transparent, #fff 18%, #fff 82%, transparent);
+  box-shadow: 0 0 14px rgba(255, 255, 255, .75);
+  pointer-events: none;
+}
+
+.train {
+  display: flex;
+  height: 100%;
+  align-items: center;
+  will-change: transform;
+}
+
+.wagon {
+  flex: 0 0 124px;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 8px 6px;
+  opacity: .58;
+  transition: opacity .25s ease, transform .25s ease;
+}
+
+.wagon img {
+  width: 88px;
+  height: 88px;
+  object-fit: contain;
+  filter: drop-shadow(0 6px 12px rgba(0, 0, 0, .6));
+}
+
+.wagon span {
+  max-width: 112px;
+  overflow: hidden;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: .04em;
+  text-align: center;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--text-dim);
+}
+
+.rail.spinning .wagon { opacity: .9; }
+
+.wagon.highlight {
+  opacity: 1;
+  transform: scale(1.06);
+}
+.wagon.highlight span { color: var(--text); }
+
+/* --- Resultat final ----------------------------------------- */
+
+.result {
+  position: absolute;
+  inset: 0;
+  z-index: 5;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 22px;
+  border-radius: 26px;
+  background: rgba(10, 9, 15, 0.94);
+  backdrop-filter: blur(6px);
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity .4s ease, visibility .4s;
+}
+
+.result.show { opacity: 1; visibility: visible; }
+
+.result h2 {
+  font-size: 15px;
+  font-weight: 600;
+  letter-spacing: .32em;
+  text-transform: uppercase;
+  color: var(--text-dim);
+}
+
+.cards {
+  display: flex;
+  align-items: center;
+  gap: 32px;
+}
+
+.card {
+  width: 236px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  padding: 20px 16px 18px;
+  border-radius: 20px;
+  border: 1px solid var(--line-strong);
+  background: linear-gradient(180deg, rgba(255, 255, 255, .07), rgba(255, 255, 255, .02));
+  opacity: 0;
+  transform: translateY(16px) scale(.94);
+}
+
+.card.reveal {
+  animation: reveal .55s cubic-bezier(.2, .9, .25, 1) forwards;
+}
+
+@keyframes reveal {
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+.card-art {
+  width: 150px;
+  height: 150px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.card-art img {
+  max-width: 100%;
+  max-height: 100%;
+  object-fit: contain;
+  filter: drop-shadow(0 10px 22px rgba(0, 0, 0, .7));
+}
+
+.card-kind {
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: .24em;
+  text-transform: uppercase;
+  color: var(--text-dim);
+}
+
+.card-name {
+  font-size: 21px;
+  font-weight: 800;
+  letter-spacing: .02em;
+  text-align: center;
+  line-height: 1.15;
+}
+
+#card-warframe { box-shadow: 0 0 0 1px rgba(53, 224, 208, .25), 0 18px 44px rgba(0, 0, 0, .5); }
+#card-warframe .card-kind { color: var(--frame); }
+#card-weapon   { box-shadow: 0 0 0 1px rgba(255, 176, 55, .25), 0 18px 44px rgba(0, 0, 0, .5); }
+#card-weapon   .card-kind { color: var(--weapon); }
+
+.plus {
+  font-size: 34px;
+  font-weight: 800;
+  color: var(--text-dim);
+}
+
+/* --- Mode positionnement (?place=1) ------------------------- */
+
+.place-frame {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  padding-bottom: 10px;
+  border: 2px dashed rgba(53, 224, 208, .8);
+  border-radius: 26px;
+  background: rgba(53, 224, 208, .07);
+  pointer-events: none;
+}
+
+/* `display: flex` ci-dessus l'emporte sur le display:none de l'attribut
+   hidden : il faut le redire explicitement. */
+.place-frame[hidden] { display: none; }
+
+.place-frame span {
+  padding: 6px 14px;
+  border-radius: 999px;
+  background: rgba(0, 0, 0, .75);
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: .05em;
+  color: var(--frame);
+}
