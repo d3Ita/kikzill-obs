@@ -44,6 +44,16 @@ function Get-Version($path) {
   try { return (Get-Content $path -Raw | ConvertFrom-Json).version } catch { return $null }
 }
 
+# Invoke-RestMethod ne reconnait pas du JSON precede d'un BOM : il rend alors une
+# chaine brute, et .version vaut $null. On accepte les deux formes.
+function Get-RemoteVersion($url) {
+  $resp = Invoke-RestMethod -Uri $url -TimeoutSec 20
+  if ($resp -is [string]) {
+    $resp = $resp.TrimStart([char]0xFEFF) | ConvertFrom-Json
+  }
+  return $resp.version
+}
+
 try {
   # --- version installee ---
   $localVersion = Get-Version (Join-Path $Root 'version.json')
@@ -53,8 +63,14 @@ try {
   # --- version publiee (cache-bust : GitHub sert le raw en cache) ---
   $stamp = [DateTimeOffset]::UtcNow.ToUnixTimeSeconds()
   $url = "https://raw.githubusercontent.com/$Repo/$Branch/version.json?t=$stamp"
-  $remoteVersion = (Invoke-RestMethod -Uri $url -TimeoutSec 20).version
+  $remoteVersion = Get-RemoteVersion $url
   $out['remote'] = $remoteVersion
+
+  # Sans cette garde, une version distante illisible passerait pour "identique"
+  # a la locale : l'updater annoncerait "a jour" alors qu'il n'a rien lu.
+  if (-not $remoteVersion) {
+    throw "Version distante illisible : le depot repond, mais version.json est vide ou malforme."
+  }
 
   $available = ($remoteVersion -and $remoteVersion -ne $localVersion)
   $out['update'] = if ($available) { '1' } else { '0' }
@@ -76,8 +92,11 @@ try {
   New-Item -ItemType Directory -Path $work -Force | Out-Null
   try {
     $zip = Join-Path $work 'source.zip'
+    # -UseBasicParsing : sans lui, PowerShell 5.1 tente d'utiliser le moteur
+    # d'Internet Explorer et echoue en mode non interactif (c'est le cas ici,
+    # lance depuis OBS).
     Invoke-WebRequest -Uri "https://github.com/$Repo/archive/refs/heads/$Branch.zip" `
-                      -OutFile $zip -TimeoutSec 300
+                      -OutFile $zip -TimeoutSec 300 -UseBasicParsing
     Expand-Archive -Path $zip -DestinationPath $work -Force
 
     # L'archive GitHub contient un unique dossier <repo>-<branche>/
