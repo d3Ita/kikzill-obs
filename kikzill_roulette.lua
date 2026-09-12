@@ -69,9 +69,16 @@ end
 -- Chemins
 ------------------------------------------------------------------
 
--- obs.script_path() renvoie le dossier du .lua, separateur final inclus.
+-- Renvoie le dossier du .lua, separateur final inclus.
+-- Attention : OBS expose script_path() comme fonction GLOBALE, pas comme membre
+-- du module obslua. On accepte les deux, au cas ou.
 local function install_dir()
-  return (obs.script_path():gsub("\\", "/"))
+  local get = rawget(_G, "script_path") or obs.script_path
+  if get == nil then
+    obs.script_log(obs.LOG_ERROR, "[kikzill] script_path() introuvable : OBS trop ancien ?")
+    return ""
+  end
+  return (get():gsub("\\", "/"))
 end
 
 local function overlay_dir()
