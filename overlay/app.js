@@ -38,18 +38,36 @@ const DEFAULTS = {
   debug: false,
 };
 
+const HAS_CONFIG = Boolean(window.KIKZILL_CONFIG);
 const CFG = Object.assign({}, DEFAULTS, window.KIKZILL_CONFIG || {});
 
 const params = new URLSearchParams(location.search);
 const MODE_PLACE = CFG.placeMode === true || params.get('place') === '1';
 
-// Le bouton « Tester un tirage » d'OBS pose un horodatage dans config.local.js.
-// Il se perime tout seul : un redemarrage d'OBS ne relance donc pas de tirage.
-const FIRE_NOW = params.has('fire')
-  || (Number(CFG.fireOnce) > 0 && (Date.now() / 1000 - Number(CFG.fireOnce)) < 15);
+// Le bouton « Tester un tirage » d'OBS pose un horodatage unix, dans l'URL
+// (?fire=...) et dans config.local.js. On n'obeit qu'a un signal frais : la meme
+// URL rechargee plus tard — au redemarrage d'OBS — ne relance donc rien.
+const FRESH_SECONDS = 15;
+const nowSec = Date.now() / 1000;
+const fireFromUrl = Number(params.get('fire') || 0);
+const fireFromCfg = Number(CFG.fireOnce || 0);
+const FIRE_NOW = params.get('fire') === '1'                          // test manuel
+  || (fireFromUrl > 1 && nowSec - fireFromUrl < FRESH_SECONDS)
+  || (fireFromCfg > 1 && nowSec - fireFromCfg < FRESH_SECONDS);
+
 if (params.has('channel')) CFG.channel = params.get('channel');
 
 const log = (...a) => console.log('[kikzill]', ...a);
+
+// Premiere ligne de la console : de quoi diagnostiquer sans rien deviner.
+log('demarrage —',
+    HAS_CONFIG ? 'config.local.js charge' : 'config.local.js ABSENT (valeurs par defaut)',
+    '| chaine:', CFG.channel || '(aucune)',
+    '| suspendu:', CFG.suspended === true,
+    '| positionnement:', MODE_PLACE,
+    '| signal de tirage:', FIRE_NOW,
+    FIRE_NOW ? '' : '(url=' + fireFromUrl + ', config=' + fireFromCfg +
+                    ', maintenant=' + Math.floor(nowSec) + ')');
 
 /* --- Rendu : mise a l'echelle de la scene --------------------- */
 

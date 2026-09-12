@@ -121,13 +121,27 @@ local function js_bool(value)
   return value and "true" or "false"
 end
 
--- `extra.fireOnce` : horodatage unix pose pour declencher un tirage de test.
-local function write_config(extra)
+-- Horodatage du tirage de test demande. Il ne peut PAS etre un argument de
+-- write_config() : set_status() modifie l'objet settings, ce qui fait rappeler
+-- script_update() par OBS — donc write_config() — avant que la page ait fini de
+-- se recharger. Le signal serait efface juste avant d'etre lu. En le gardant
+-- ici, toutes les reecritures le reportent a l'identique.
+local pending_fire = 0
+local FIRE_TTL = 12   -- secondes ; l'overlay, lui, ignore un signal > 15 s
+
+local function write_config()
   local path = overlay_dir() .. "config.local.js"
   local file, err = io.open(path, "w")
   if not file then
-    set_status("Impossible d'ecrire config.local.js : " .. tostring(err))
+    -- surtout pas set_status() ici : il modifie les settings, ce qui peut
+    -- rappeler script_update() -> write_config() -> echec -> boucle infinie.
+    obs.script_log(obs.LOG_ERROR,
+      "[kikzill] impossible d'ecrire config.local.js : " .. tostring(err))
     return false
+  end
+
+  if pending_fire > 0 and os.time() - pending_fire > FIRE_TTL then
+    pending_fire = 0
   end
 
   local channel = (S.channel or ""):gsub("^#", "")
@@ -155,7 +169,7 @@ local function write_config(extra)
     "",
     "  suspended: "      .. js_bool(S.suspended)       .. ",",
     "  placeMode: "      .. js_bool(S.place_mode)      .. ",",
-    "  fireOnce: "       .. tostring((extra and extra.fireOnce) or 0) .. ",",
+    "  fireOnce: "       .. tostring(pending_fire)       .. ",",
     "};",
     "",
   }
@@ -257,7 +271,7 @@ end
 ------------------------------------------------------------------
 
 local function do_apply()
-  if not write_config(nil) then return true end
+  if not write_config() then return true end
   if refresh_overlay() then
     set_status("Reglages appliques, overlay recharge.")
   else
@@ -268,7 +282,7 @@ local function do_apply()
 end
 
 local function do_install_source()
-  write_config(nil)
+  write_config()
   local ok, created = create_or_update_source()
   if not ok then return true end
   refresh_overlay()
@@ -286,7 +300,7 @@ local function do_toggle_suspend()
     obs.obs_data_set_bool(script_settings, "suspended", S.suspended)
   end
 
-  write_config(nil)
+  write_config()
   local touched = set_overlay_visible(not S.suspended)
   refresh_overlay()
 
@@ -308,14 +322,31 @@ local function do_test_draw()
     return true
   end
 
-  write_config({ fireOnce = os.time() })
+  local src = obs.obs_get_source_by_name(S.source_name)
+  if src == nil then
+    set_status("Source « " .. S.source_name ..
+               " » introuvable : clique d'abord « Ajouter l'overlay a la scene ».")
+    return true
+  end
+
+  pending_fire = os.time()
+  write_config()
   set_overlay_visible(true)
 
-  if refresh_overlay() then
-    set_status("Tirage de test lance.")
-  else
-    set_status("Source introuvable : clique d'abord « Ajouter l'overlay a la scene ».")
-  end
+  -- Le signal voyage dans l'URL, pas seulement dans config.local.js : il est lu
+  -- a l'analyse de l'URL, donc rien ne peut l'effacer entre l'ecriture et le
+  -- chargement de la page. Changer l'URL suffit a recharger la source.
+  -- L'horodatage se perime : au prochain demarrage d'OBS, cette meme URL ne
+  -- relancera pas de tirage.
+  local settings = obs.obs_data_create()
+  obs.obs_data_set_bool(settings, "is_local_file", false)
+  obs.obs_data_set_string(settings, "url",
+                          overlay_url() .. "?fire=" .. tostring(pending_fire))
+  obs.obs_source_update(src, settings)
+  obs.obs_data_release(settings)
+  obs.obs_source_release(src)
+
+  set_status("Tirage de test lance sur « " .. S.source_name .. " ».")
   return true
 end
 
@@ -325,7 +356,7 @@ local function do_toggle_place()
     obs.obs_data_set_bool(script_settings, "place_mode", S.place_mode)
   end
 
-  write_config(nil)
+  write_config()
   if S.place_mode then set_overlay_visible(true) end
 
   if refresh_overlay() then
@@ -568,7 +599,7 @@ end
 
 function script_update(settings)
   load_settings(settings)
-  write_config(nil)   -- le fichier suit les champs ; le rechargement reste manuel
+  write_config()   -- le fichier suit les champs ; le rechargement reste manuel
 end
 
 function script_load(settings)
