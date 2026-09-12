@@ -1,0 +1,8 @@
+# L'updater remplace les fichiers par ceux d'une archive zip GitHub, qui les
+# stocke tels qu'ils sont commites. En forcant LF partout, une copie clonee et
+# une copie extraite du zip sont identiques au bit pres : Git ne signale plus
+# de modifications fantomes apres une mise a jour.
+* text=auto eol=lf
+
+*.png  binary
+*.webp binary
