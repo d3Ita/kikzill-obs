@@ -103,6 +103,10 @@ retrouves un overlay muet, regarde la ligne **État** en haut du panneau.
 Le téléchargement tourne en arrière-plan : OBS ne gèle pas. Ta configuration
 (`overlay/config.local.js`) n'est jamais touchée.
 
+> GitHub garde `version.json` en cache environ **5 minutes**. Juste après avoir
+> publié une nouvelle version, *Vérifier* peut donc encore répondre « à jour » :
+> c'est normal, réessaie quelques minutes plus tard.
+
 Après une installation, recharge le script avec le bouton **⟳** de la fenêtre
 *Scripts* pour prendre en compte la nouvelle version de `kikzill_roulette.lua`.
 

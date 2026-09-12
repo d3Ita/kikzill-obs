@@ -47,7 +47,10 @@ function Get-Version($path) {
 # Invoke-RestMethod ne reconnait pas du JSON precede d'un BOM : il rend alors une
 # chaine brute, et .version vaut $null. On accepte les deux formes.
 function Get-RemoteVersion($url) {
-  $resp = Invoke-RestMethod -Uri $url -TimeoutSec 20
+  # raw.githubusercontent passe par un CDN qui garde les fichiers ~5 min ;
+  # l'horodatage dans l'URL ne suffit pas toujours a le contourner.
+  $resp = Invoke-RestMethod -Uri $url -TimeoutSec 20 `
+                            -Headers @{ 'Cache-Control' = 'no-cache'; 'Pragma' = 'no-cache' }
   if ($resp -is [string]) {
     $resp = $resp.TrimStart([char]0xFEFF) | ConvertFrom-Json
   }
@@ -106,9 +109,17 @@ try {
     # config.local.js n'est pas dans le depot : Copy-Item ne peut pas l'ecraser.
     Copy-Item -Path (Join-Path $extracted.FullName '*') -Destination $Root -Recurse -Force
 
+    # On relit version.json sur le disque plutot que de faire confiance a la
+    # valeur lue plus haut : le CDN peut avoir servi une copie en cache, alors
+    # que l'archive zip, elle, est toujours a jour. Annoncer la version qu'on
+    # croyait installer au lieu de celle reellement posee serait un mensonge.
+    $installed = Get-Version (Join-Path $Root 'version.json')
+    if (-not $installed) { $installed = $remoteVersion }
+
     $out['status']  = 'updated'
-    $out['local']   = $remoteVersion
-    $out['message'] = "Mise a jour installee : v$localVersion -> v$remoteVersion."
+    $out['local']   = $installed
+    $out['remote']  = $installed
+    $out['message'] = "Mise a jour installee : v$localVersion -> v$installed."
   }
   finally {
     Remove-Item $work -Recurse -Force -ErrorAction SilentlyContinue
